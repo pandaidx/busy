@@ -13,19 +13,25 @@ function ask(question: string, hidden = false): Promise<string> {
     terminal: true,
   });
   return new Promise((resolve) => {
-    process.stdout.write(question);
-    if (hidden) {
-      (
-        rl as unknown as { _writeToOutput: (s: string) => void }
-      )._writeToOutput = () => undefined;
-    }
-    rl.question("", (answer) => {
+    // Pass the question to readline: it redraws the line, which would erase a prompt written before.
+    rl.question(question, (answer) => {
       rl.close();
       if (hidden) {
         process.stdout.write("\n");
       }
       resolve(answer.trim());
     });
+    if (hidden) {
+      const masked = rl as unknown as {
+        _writeToOutput: (s: string) => void;
+        line: string;
+      };
+      masked._writeToOutput = () => {
+        process.stdout.write(
+          `\r\x1b[2K${question}${"*".repeat(masked.line.length)}`
+        );
+      };
+    }
   });
 }
 

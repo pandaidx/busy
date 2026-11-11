@@ -1,0 +1,28 @@
+# Builds the bot computer image (images/bot-base) on a Linux runner and pushes it to this
+# installation's Vercel Container Registry. Run by hand from the Actions tab; prints BOT_BASE_IMAGE.
+name: Bot base image
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: team_ukdYVpxTVKQvyHAluJbsmieN
+      VERCEL_PROJECT_ID: prj_C3ADBw9bJeJDbLUS7IhDTdU8fF7z
+      BOT_BASE_IMAGE_REPOSITORY: vcr.vercel.com/pandaidx/busy-hub/bot-base
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to Vercel Container Registry
+        run: npx -y vercel@65.11.0 vcr login docker --project busy-hub --scope pandaidx --token "$VERCEL_TOKEN"
+      - name: Build and push
+        run: images/bot-base/push.sh "v$(cat images/bot-base/image-version)" | tee push.log
+      - name: Summary
+        run: grep BOT_BASE_IMAGE push.log >> "$GITHUB_STEP_SUMMARY"
